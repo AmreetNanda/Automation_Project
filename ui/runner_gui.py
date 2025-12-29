@@ -9,6 +9,7 @@ import webbrowser
 from framework.test_registry import list_test_cases, get_test_pytest_path
 from utils.appium_server import AppiumServer
 from utils.port_checker import is_port_open
+import sys
 
 #_________________________________________________________________________
 # Colors
@@ -62,9 +63,9 @@ class TestRunnerGUI:
     # Dashboard
     #_________________________________________________________________________
     def build_dashboard(self, frame):
-        frame.columnfigure(0, weight=1)
-        frame.columnfigure(1, weight=2)
-        frame.columnfigure(2, weight=3)
+        frame.columnconfigure(0, weight=1)
+        frame.columnconfigure(1, weight=2)
+        frame.columnconfigure(2, weight=3)
 
         #Left Panel - Server & Test Control
         left = tk.Frame(frame, bg = DARK_BG, padx=15, pady=10)
@@ -94,7 +95,7 @@ class TestRunnerGUI:
 
         tk.Button(left, text="Remove Selected", bg=FAIL, fg="white", font=("Segoe UI", 11), command=self.remove_selected).pack(fill="x", pady=5)
 
-        self.run_button = tk.Button(left, text="RUN SELECTED TESTS", bg="#7d3c98", fg="white", font=("Segoe UI", 12, "bold"), command=self.run_test_threaded)
+        self.run_button = tk.Button(left, text="RUN SELECTED TESTS", bg="#7d3c98", fg="white", font=("Segoe UI", 12, "bold"), command=self.run_tests_threaded)
         self.run_button.pack(fill="x", pady=20)
 
         self.status_label = tk.Label(left, text="Status: Idle", fg=ACCENT, bg=DARK_BG, font=("Segoe UI", 11))
@@ -116,7 +117,7 @@ class TestRunnerGUI:
         middle = tk.Frame(frame, bg=DARK_BG)
         middle.grid(row=0, column=1, sticky="nsew")
         tk.Label(middle, text="APPIUM REAL-TIME LOGS", fg=ACCENT, bg=DARK_BG, font=("Segoe UI", 12, "bold")).pack(anchor="center", pady=10)
-        self.dashboard_appium = tk.Text(middle, bg="green", fg="white")
+        self.dashboard_appium = tk.Text(middle, bg="black", fg="green")
         self.dashboard_appium.pack(fill="both", expand=True, padx=10, pady=10)
 
         #_________________________________________________________________________
@@ -125,7 +126,7 @@ class TestRunnerGUI:
         right = tk.Frame(frame, bg=DARK_BG)
         right.grid(row=0, column=2, sticky="nsew")
         tk.Label(right, text="PYTEST LIVE LOGS", fg=ACCENT, bg=DARK_BG, font=("Segoe UI", 12, "bold")).pack(anchor="center", pady=10)
-        self.dashboard_pytest = tk.Text(right, bg="green", fg="white")
+        self.dashboard_pytest = tk.Text(right, bg="black", fg="red")
         self.dashboard_pytest.pack(fill="both", expand=True, padx=10, pady=10)
 
     #_________________________________________________________________________
@@ -202,7 +203,7 @@ class TestRunnerGUI:
             self.listbox.insert(tk.END, test)
 
     def remove_selected(self):
-        sel = self.listbox.curseselection()
+        sel = self.listbox.curselection()
         if sel:
             t = self.listbox.get(sel)
             self.listbox.delete(sel)
@@ -211,5 +212,58 @@ class TestRunnerGUI:
     #_________________________________________________________________________
     # Test Execution
     #_________________________________________________________________________
+    def run_tests_threaded(self):
+        if not self.server_running:
+            messagebox.showerror("Error, Start appium server first")
+            return
+        if not self.selected_tests:
+            messagebox.showerror("Error, No test selected")
+        threading.Thread(target=self.run_tests, daemon=True).start()
     
+    def run_tests(self):
+        self.status_label.config(text="Running tests...")
+
+        pytest_args = [get_test_pytest_path(t) for t in self.selected_tests]
+        os.makedirs("reports", exist_ok=True)
+        self.report_path = os.path.abspath("reports/test_report.html")
+
+        # cmd = ["pytest"] + pytest_args + ["--html", self.report_path, "--self-contained-html"]
+        cmd = [
+            sys.executable, "-m", "pytest",
+            *pytest_args,
+            "--html", self.report_path,
+            "--self-contained-html"]
+        
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+
+        for line in p.stdout:
+            self.append_pytest_log(line.strip())
+
+        p.wait()
+        self.open_report_btn.config(state=tk.NORMAL)
+        self.status_label.config(text="Finished")
+
+    #_________________________________________________________________________
+    # Open HTML Report
+    #_________________________________________________________________________
+    def open_report(self):
+        if self.report_path and os.path.exists(self.report_path):
+            webbrowser.open(f"file:///{self.report_path}")
+    
+
+    #_________________________________________________________________________
+    # Open Latest Log file
+    #_________________________________________________________________________
+    def open_latest_log(self):
+        log_files = glob.glob(os.path.join("logs", "*.logs"))
+        if not log_files:
+            messagebox.showinfo("Info", "No log files found in the logs folder")
+            return 
+        latest_log = max(log_files, key=os.path.getctime)
+        webbrowser.open(f"file:///{os.path.abspath(latest_log)}")
+
+if __name__ == "__main__":
+    root = tk.TK()
+    app = TestRunnerGUI(root)
+    root.mainloop()
 

@@ -1,6 +1,6 @@
 TEST_CASES = {
-    "Google Maps - Coffee Shop Test":"tests\test_coffee_maps.py",
-    "Google Maps - Check Route Navigation":"tests\test_route_navigation.py"
+    "Google Maps - Coffee Shop Test":"tests/test_coffee_maps.py::test_open_maps_and_click_coffee",
+    "Google Maps - Check Route Navigation":"tests/test_route_navigation.py::test_route_to_hsr_with_gps_simulation"
 }
 
 def list_test_cases():
