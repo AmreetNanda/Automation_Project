@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  appium:
+    build: .
+    container_name: appium_server
+    ports:
+      - "4723:4723"
+    volumes:
+      - .:/app
+    environment:
+      - ANDROID_HOME=/opt/android-sdk
+      - PATH=/opt/android-sdk/tools:/opt/android-sdk/platform-tools:$PATH
+    command: appium
+    tty: true
+
+  tests:
+    build: .
+    container_name: test_runner
+    depends_on:
+      - appium
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    entrypoint: ["pytest", "--html=reports/test_report.html", "--self-contained-html"]
