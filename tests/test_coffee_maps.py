@@ -68,6 +68,23 @@ def test_open_maps_and_click_coffee(driver):
         pytest.fail(f"Test failed: {e}. Screenshot saved at {screenshot_path}")
         raise CustomException(e, sys)
 
+# from utils.element_finder import find_element_with_healing
+# def click_coffee_shop_button(driver):
+#     try:
+#         coffee_button = find_element_with_healing(
+#             driver,
+#             AppiumBy.ACCESSIBILITY_ID,
+#             "Coffee shops",
+#             description="Coffee shop button"
+#         )
+#         coffee_button.click()
+#         logging.info("Clicked Coffee Shops button")
+
+#     except NoSuchElementException:
+#         screenshot_path = os.path.join(SCREENSHOT_DIR, "coffee_button_not_found.png")
+#         driver.save_screenshot(screenshot_path)
+#         raise Exception("Coffee shop button not found")
+
 @pytest.fixture
 def driver():
     driver_instance = create_driver()

@@ -10,6 +10,8 @@ from framework.test_registry import list_test_cases, get_test_pytest_path
 from utils.appium_server import AppiumServer
 from utils.port_checker import is_port_open
 import sys
+from ai.test_generator import generate_test
+from ai.registry_updater import auto_register
 
 #_________________________________________________________________________
 # Colors
@@ -49,15 +51,20 @@ class TestRunnerGUI:
         self.tab_main = tk.Frame(self.notebook, bg=DARK_BG)
         self.tab_appium = tk.Frame(self.notebook, bg = DARK_BG)
         self.tab_pytest = tk.Frame(self.notebook, bg = DARK_BG)
+        self.tab_ai = tk.Frame(self.notebook, bg=DARK_BG)
+
+
 
         self.notebook.add(self.tab_main, text="Dashboard")
         self.notebook.add(self.tab_appium, text="Appium Logs")
         self.notebook.add(self.tab_pytest, text="Pytest Logs")
+        self.notebook.add(self.tab_ai, text="AI Test Generator")
 
         # Build each tab
         self.build_dashboard(self.tab_main)
         self.build_appium_tab(self.tab_appium)
         self.build_pytest_tab(self.tab_pytest)
+        self.build_ai_tab(self.tab_ai)
 
     #_________________________________________________________________________
     # Dashboard
@@ -158,6 +165,36 @@ class TestRunnerGUI:
         self.dashboard_pytest.see(tk.END)
 
     #_________________________________________________________________________
+    # AI Tab
+    #_________________________________________________________________________
+    def build_ai_tab(self, frame):
+        tk.Label(frame, text="Describe Test Case (Natural Language)",
+                fg=ACCENT, bg=DARK_BG, font=("Segoe UI", 13, "bold")).pack(pady=10)
+
+        self.ai_text = tk.Text(frame, height=6, width=100)
+        self.ai_text.pack(pady=10)
+
+        tk.Button(
+            frame,
+            text="Generate & Run Test",
+            bg=ACCENT,
+            font=("Segoe UI", 12, "bold"),
+            command=self.generate_and_run_ai_test
+        ).pack(pady=10)
+    
+    def generate_and_run_ai_test(self):
+        user_prompt = self.ai_text.get("1.0", tk.END).strip()
+        if not user_prompt:
+            messagebox.showerror("Error", "Please enter test description")
+            return
+
+        test_path = generate_test(user_prompt)
+        auto_register(test_path, user_prompt)
+
+        self.dropdown["values"] = list_test_cases()
+        messagebox.showinfo("Success", "AI Test Generated & Registered")
+
+    #_________________________________________________________________________
     # Server Control
     #_________________________________________________________________________
     def start_server(self):
@@ -227,6 +264,14 @@ class TestRunnerGUI:
         os.makedirs("reports", exist_ok=True)
         self.report_path = os.path.abspath("reports/test_report.html")
 
+        if p.returncode != 0:
+            from ai.failure_analyzer import analyze_failure
+
+        ai_report = analyze_failure(
+            pytest_log=self.pytest_text.get("1.0", tk.END),
+            appium_log=self.appium_text.get("1.0", tk.END))
+        messagebox.showinfo("AI Failure Analysis", ai_report)
+
         # cmd = ["pytest"] + pytest_args + ["--html", self.report_path, "--self-contained-html"]
         cmd = [
             sys.executable, "-m", "pytest",
@@ -234,7 +279,7 @@ class TestRunnerGUI:
             "--html", self.report_path,
             "--self-contained-html"]
         
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8", text=True, bufsize=1)
 
         for line in p.stdout:
             self.append_pytest_log(line.strip())
@@ -261,6 +306,45 @@ class TestRunnerGUI:
             return 
         latest_log = max(log_files, key=os.path.getctime)
         webbrowser.open(f"file:///{os.path.abspath(latest_log)}")
+    
+    #_________________________________________________________________________
+    # Generate and Run AI testcases
+    #_________________________________________________________________________
+    def generate_and_run_ai_test(self):
+        user_prompt = self.ai_text.get("1.0", tk.END).strip()
+
+        if not user_prompt:
+            messagebox.showerror("Error", "Please enter test description")
+            return
+
+        self.status_label.config(text="Generating AI test...")
+        self.root.update_idletasks()
+
+        try:
+            # Generate test
+            test_path = generate_test(user_prompt)
+
+            # Register test
+            from ai.registry_updater import auto_register
+            auto_register(test_path, user_prompt)
+
+            # Refresh dropdown
+            self.dropdown["values"] = list_test_cases()
+            self.dropdown.set(f"AI: {user_prompt}")
+
+            self.status_label.config(text="AI Test Generated")
+            messagebox.showinfo(
+                "Success",
+                f"AI Test Generated & Registered\n\n{os.path.basename(test_path)}"
+            )
+
+        except Exception as e:
+            import traceback
+            self.status_label.config(text="AI Test Failed")
+            messagebox.showerror(
+                "AI Generation Failed",
+                f"{e}\n\n{traceback.format_exc()}"
+            )
 
 if __name__ == "__main__":
     root = tk.TK()
