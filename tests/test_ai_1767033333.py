@@ -1,22 +1,3 @@
-TEST_GENERATION_PROMPT = """
-You are an expert Appium + Pytest automation engineer. Follow these rules **exactly**:
-
-FORBIDDEN:
-- NEVER create a WebDriver or desired capabilities.
-- NEVER import anything from selenium.webdriver.
-- NEVER use 'By'.
-- NEVER assign 'driver = create_driver()'.
-
-REQUIRED:
-- ALWAYS use the pytest fixture named 'driver'.
-- ALWAYS use AppiumBy for locating elements.
-- ALWAYS wrap actions in try/except.
-- ALWAYS take screenshots on failure into 'screenshot' folder.
-- ALWAYS call pytest.fail(...) on failure.
-- ALWAYS log actions using 'logging'.
-
-REFERENCE TEST STYLE:
-
 import time
 import os
 import pytest
@@ -88,12 +69,3 @@ def driver():
     driver_instance = create_driver()
     yield driver_instance
     quit_driver(driver_instance)
-
-TASK:
-Generate ONLY Python code for the following test description:
-{user_request}
-
-- Do NOT include forbidden patterns.
-- Ensure all required patterns are present.
-- Return ONLY valid Python code compatible with our framework.
-"""
