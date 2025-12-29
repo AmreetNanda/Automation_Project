@@ -168,28 +168,6 @@ class TestRunnerGUI:
     #_________________________________________________________________________
     # AI Tab
     #_________________________________________________________________________
-    # def build_ai_tab(self, frame):
-    #     tk.Label(frame, text="Describe Test Case (Natural Language)",
-    #             fg=ACCENT, bg=DARK_BG, font=("Segoe UI", 13, "bold")).pack(pady=10)
-
-    #     # User input
-    #     self.ai_text = tk.Text(frame, height=6, width=100)
-    #     self.ai_text.pack(pady=10)
-
-    #     # Generate button
-    #     tk.Button(
-    #         frame,
-    #         text="Generate & Run Test",
-    #         bg=ACCENT,
-    #         font=("Segoe UI", 12, "bold"),
-    #         command=self.generate_and_run_ai_test
-    #     ).pack(pady=10)
-
-    #     # Logger window
-    #     tk.Label(frame, text="AI Generation Logs", fg=ACCENT, bg=DARK_BG, font=("Segoe UI", 12, "bold")).pack(pady=5)
-    #     self.ai_log = tk.Text(frame, height=15, width=100, bg="black", fg="lime", state="normal")
-    #     self.ai_log.pack(pady=5, padx=10, fill="both", expand=True)
-    #     self.ai_log.insert(tk.END, "AI logs will appear here...\n")
 
     def build_ai_tab(self, frame):
         tk.Label(frame, text="Describe Test Case (Natural Language)",
@@ -228,49 +206,6 @@ class TestRunnerGUI:
 
         self.dropdown["values"] = list_test_cases()
         messagebox.showinfo("Success", "AI Test Generated & Registered")
-    # def generate_and_run_ai_test(self):
-    #     user_prompt = self.ai_text.get("1.0", tk.END).strip()
-    #     if not user_prompt:
-    #         messagebox.showerror("Error", "Please enter test description")
-    #         return
-
-    #     self.status_label.config(text="Generating AI test...")
-    #     self.ai_log.insert(tk.END, f"Starting generation for: {user_prompt}\n")
-    #     self.ai_log.see(tk.END)
-
-    #     # Run in a separate thread to avoid blocking UI
-    #     def task():
-    #         try:
-    #             # Example: streaming logs while AI generates
-    #             for i in range(1, 6):
-    #                 self.ai_log.insert(tk.END, f"Generating... step {i}/5\n")
-    #                 self.ai_log.see(tk.END)
-    #                 time.sleep(0.5)  # simulate streaming logs
-
-    #             # Generate actual test
-    #             test_path = generate_test(user_prompt)
-
-    #             # Register test
-    #             from ai.registry_updater import auto_register
-    #             auto_register(test_path, user_prompt)
-
-    #             # Refresh dropdown
-    #             self.dropdown["values"] = list_test_cases()
-    #             self.dropdown.set(f"AI: {user_prompt}")
-
-    #             self.ai_log.insert(tk.END, f"Test generated successfully: {os.path.basename(test_path)}\n")
-    #             self.ai_log.see(tk.END)
-    #             self.status_label.config(text="AI Test Generated")
-    #         except Exception as e:
-    #             import traceback
-    #             self.ai_log.insert(tk.END, f"AI generation failed: {e}\n")
-    #             self.ai_log.insert(tk.END, traceback.format_exc() + "\n")
-    #             self.ai_log.see(tk.END)
-    #             self.status_label.config(text="AI Test Failed")
-    #             messagebox.showerror("AI Generation Failed", f"{e}")
-
-    #     threading.Thread(target=task, daemon=True).start()
-
     #_________________________________________________________________________
     # Server Control
     #_________________________________________________________________________
@@ -333,39 +268,6 @@ class TestRunnerGUI:
         if not self.selected_tests:
             messagebox.showerror("Error, No test selected")
         threading.Thread(target=self.run_tests, daemon=True).start()
-    
-    # def run_tests(self):
-    #     self.status_label.config(text="Running tests...")
-
-    #     pytest_args = [get_test_pytest_path(t) for t in self.selected_tests]
-    #     os.makedirs("reports", exist_ok=True)
-    #     self.report_path = os.path.abspath("reports/test_report.html")
-
-    #     # cmd = ["pytest"] + pytest_args + ["--html", self.report_path, "--self-contained-html"]
-    #     cmd = [
-    #         sys.executable, "-m", "pytest",
-    #         *pytest_args,
-    #         "--html", self.report_path,
-    #         "--self-contained-html"]
-        
-    #     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8", text=True, bufsize=1)
-        
-    #     for line in p.stdout:
-    #         self.append_pytest_log(line.strip())
-        
-    #     p.wait()
-
-    #     # AI failure analysis ONLY after process ends
-    #     if p.returncode != 0:
-    #         from ai.failure_analyzer import analyze_failure
-
-    #         ai_report = analyze_failure(
-    #             pytest_log=self.pytest_text.get("1.0", tk.END),
-    #             appium_log=self.appium_text.get("1.0", tk.END))
-    #         messagebox.showinfo("AI Failure Analysis", ai_report)
-
-    #     self.open_report_btn.config(state=tk.NORMAL)
-    #     self.status_label.config(text="Finished")
 
     def run_tests(self):
         self.status_label.config(text="Running tests...")
@@ -443,41 +345,6 @@ class TestRunnerGUI:
     #_________________________________________________________________________
     # Generate and Run AI testcases
     #_________________________________________________________________________
-    # def generate_and_run_ai_test(self):
-    #     user_prompt = self.ai_text.get("1.0", tk.END).strip()
-
-    #     if not user_prompt:
-    #         messagebox.showerror("Error", "Please enter test description")
-    #         return
-
-    #     self.status_label.config(text="Generating AI test...")
-    #     self.root.update_idletasks()
-
-    #     try:
-    #         # Generate test
-    #         test_path = generate_test(user_prompt)
-
-    #         # Register test
-    #         from ai.registry_updater import auto_register
-    #         auto_register(test_path, user_prompt)
-
-    #         # Refresh dropdown
-    #         self.dropdown["values"] = list_test_cases()
-    #         self.dropdown.set(f"AI: {user_prompt}")
-
-    #         self.status_label.config(text="AI Test Generated")
-    #         messagebox.showinfo(
-    #             "Success",
-    #             f"AI Test Generated & Registered\n\n{os.path.basename(test_path)}"
-    #         )
-
-    #     except Exception as e:
-    #         import traceback
-    #         self.status_label.config(text="AI Test Failed")
-    #         messagebox.showerror(
-    #             "AI Generation Failed",
-    #             f"{e}\n\n{traceback.format_exc()}"
-    #         )
 
     def generate_and_run_ai_test_threaded(self):
         threading.Thread(target=self.generate_and_run_ai_test, daemon=True).start()
