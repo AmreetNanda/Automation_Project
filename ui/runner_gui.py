@@ -326,6 +326,7 @@ class TestRunnerGUI:
         if p.returncode != 0:
             pytest_log = self.pytest_text.get("1.0", tk.END)
 
+            # Extract failed locator from pytest logs
             failed_locator = extract_failed_locator(pytest_log)
 
             if failed_locator:
@@ -338,6 +339,7 @@ class TestRunnerGUI:
                 except Exception:
                     pass
 
+                # Use AI to heal the locator
                 healed_locator = heal_locator(
                     failed_locator=failed_locator,
                     page_source=page_source
@@ -345,23 +347,25 @@ class TestRunnerGUI:
 
                 if healed_locator:
                     self.append_pytest_log(f"✅ Healed locator found: {healed_locator}")
+                    self.log_ai(f"Self-healing applied:\nOld locator: {failed_locator}\nNew locator: {healed_locator}")
 
-                    # Patch test code
+                    # Patch test code with healed locator
                     patch_test_code(
                         file_path=file_path,
                         old=failed_locator,
                         new=healed_locator
                     )
 
-                    self.append_pytest_log("🔁 Retrying test after self-healing...")
+                    self.append_pytest_log("🔁 Retrying the failed test...")
 
-                    # Re-run pytest once
-                    retry = subprocess.run(
-                        cmd,
-                        capture_output=True,
-                        text=True
-                    )
-
+                    # Retry only the failed test
+                    retry_cmd = [
+                        sys.executable, "-m", "pytest",
+                        f"{file_path}::{failed_locator}",  # retry the specific test if function name is locator
+                        "--html", self.report_path,
+                        "--self-contained-html"
+                    ]
+                    retry = subprocess.run(retry_cmd, capture_output=True, text=True)
                     self.append_pytest_log(retry.stdout)
 
                     if retry.returncode == 0:
@@ -369,9 +373,11 @@ class TestRunnerGUI:
                             "Self-Healing Success",
                             "Test passed after self-healing 🎉"
                         )
+                        self.open_report_btn.config(state=tk.NORMAL)
+                        self.status_label.config(text="Finished")
                         return
 
-            # Fallback: failure analysis
+            # Fallback: if self-healing fails or no locator found, use AI failure analysis
             from ai.failure_analyzer import analyze_failure
             ai_report = analyze_failure(
                 pytest_log=pytest_log,
@@ -379,10 +385,8 @@ class TestRunnerGUI:
             )
             messagebox.showinfo("AI Failure Analysis", ai_report)
 
-
         self.open_report_btn.config(state=tk.NORMAL)
         self.status_label.config(text="Finished")
-
 
     #_________________________________________________________________________
     # Open HTML Report

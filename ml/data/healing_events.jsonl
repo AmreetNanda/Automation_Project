@@ -1,0 +1,8 @@
+{
+  "timestamp": "2025-01-18T14:32:10",
+  "failed_locator": "AppiumBy.ACCESSIBILITY_ID, 'Coffee shops'",
+  "healed_locator": "AppiumBy.XPATH, '//android.widget.TextView[@text=\"Coffee\"]'",
+  "success": true,
+  "app": "Google Maps",
+  "screen": "Search Results"
+}
