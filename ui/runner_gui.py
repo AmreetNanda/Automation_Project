@@ -14,6 +14,10 @@ from ai.test_generator import generate_test
 from ai.registry_updater import auto_register
 from framework.test_registry import register_test
 
+from ai.self_healing import heal_locator
+from ai.test_patcher import patch_test_code
+from ai.failure_analyzer import extract_failed_locator
+
 #_________________________________________________________________________
 # Colors
 #_________________________________________________________________________
@@ -312,12 +316,69 @@ class TestRunnerGUI:
             self.append_pytest_log(line.strip())
         p.wait()
 
+        # if p.returncode != 0:
+        #     from ai.failure_analyzer import analyze_failure
+        #     ai_report = analyze_failure(
+        #         pytest_log=self.pytest_text.get("1.0", tk.END),
+        #         appium_log=self.appium_text.get("1.0", tk.END))
+        #     messagebox.showinfo("AI Failure Analysis", ai_report)
+
         if p.returncode != 0:
+            pytest_log = self.pytest_text.get("1.0", tk.END)
+
+            failed_locator = extract_failed_locator(pytest_log)
+
+            if failed_locator:
+                self.append_pytest_log("🔧 Attempting self-healing...")
+
+                # Get page source from Appium
+                page_source = ""
+                try:
+                    page_source = self.server.driver.page_source
+                except Exception:
+                    pass
+
+                healed_locator = heal_locator(
+                    failed_locator=failed_locator,
+                    page_source=page_source
+                )
+
+                if healed_locator:
+                    self.append_pytest_log(f"✅ Healed locator found: {healed_locator}")
+
+                    # Patch test code
+                    patch_test_code(
+                        file_path=file_path,
+                        old=failed_locator,
+                        new=healed_locator
+                    )
+
+                    self.append_pytest_log("🔁 Retrying test after self-healing...")
+
+                    # Re-run pytest once
+                    retry = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True
+                    )
+
+                    self.append_pytest_log(retry.stdout)
+
+                    if retry.returncode == 0:
+                        messagebox.showinfo(
+                            "Self-Healing Success",
+                            "Test passed after self-healing 🎉"
+                        )
+                        return
+
+            # Fallback: failure analysis
             from ai.failure_analyzer import analyze_failure
             ai_report = analyze_failure(
-                pytest_log=self.pytest_text.get("1.0", tk.END),
-                appium_log=self.appium_text.get("1.0", tk.END))
+                pytest_log=pytest_log,
+                appium_log=self.appium_text.get("1.0", tk.END)
+            )
             messagebox.showinfo("AI Failure Analysis", ai_report)
+
 
         self.open_report_btn.config(state=tk.NORMAL)
         self.status_label.config(text="Finished")
