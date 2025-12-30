@@ -1,4 +1,7 @@
 from ai.ollama_client import ask_ollama
+from ml.data.collector import collect
+from ml.data.schemas import TestExecutionSample
+
 def analyze_failure(pytest_log, appium_log):
     prompt = f"""
     Analyze this Appium test failure.
