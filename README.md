@@ -226,7 +226,7 @@ Open: 👉 reports/test_report.html
 ![App Screenshot](https://github.com/AmreetNanda/Automation_Project/blob/main/Failure%20Analysis%20-%202.png)
 
 ## Demo 
-https://github.com/user-attachments/assets/5049d423-4334-4fa4-ab06-a786c3d31d82
+https://github.com/user-attachments/assets/746a4c75-0969-4a71-a581-3f7b742e2cb0
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
